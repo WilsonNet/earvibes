@@ -69,7 +69,7 @@ export const REAL_SONGS: RealSong[] = [
     id: "stand_by_me",
     title: "Stand By Me",
     artist: "Ben E. King",
-    youtubeId: "BTCfQ6Bb8QE", // Official Lyric Video (Often more embed-friendly)
+    youtubeId: "hwZNL7QVJjE", // Official Ben E. King video
     startTime: 0,
     endTime: 18,
     levelType: LevelType.MAJOR,
@@ -80,7 +80,7 @@ export const REAL_SONGS: RealSong[] = [
     id: "hello_adele",
     title: "Hello",
     artist: "Adele",
-    youtubeId: "Sj_9CiNkkn4", // Lyric Video (Fan upload, safer than VEVO for embedding)
+    youtubeId: "YQHsXMglC9A", // Official Adele video
     startTime: 83, // Chorus start
     endTime: 96,
     levelType: LevelType.MINOR,
