@@ -32,6 +32,8 @@ EarVibes is an interactive, open-source ear training application designed to hel
 2.  Install dependencies: `pnpm install`
 3.  Run the development server: `pnpm run dev`
 
+**Note**: This app uses ES modules and must be served via HTTP server. Double-clicking `index.html` directly will not work due to CORS restrictions. Use `pnpm run dev` for local development.
+
 ## Contributing
 
 This is a personal project and not a commercial product. While the source code is open, I am maintaining it primarily for my own use and learning.
