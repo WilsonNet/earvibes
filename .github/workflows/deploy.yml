@@ -38,9 +38,12 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Copy Service Worker
-        # Ensure Service Worker is copied to the build output
-        run: cp sw.js dist/ || true
+      - name: Copy Public Files
+        # Copy robots.txt and sitemap.xml to build output
+        run: |
+          cp public/robots.txt dist/ || true
+          cp public/sitemap.xml dist/ || true
+          cp sw.js dist/ || true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
