@@ -18,6 +18,206 @@ const ShortcutBadge = ({ k, className = "" }: { k: string, className?: string })
   </span>
 );
 
+const TopBar: React.FC<{
+  gameState: GameState;
+  onBack: () => void;
+  currentPreset: SynthPreset;
+  togglePreset: () => void;
+  getPresetColor: () => string;
+  onHelp: () => void;
+}> = ({ gameState, onBack, currentPreset, togglePreset, getPresetColor, onHelp }) => {
+  const { t } = useTranslation();
+  const titleKey = gameState.level ? `levelTitles.${gameState.level.id}` as const : 'levelTitles.1';
+
+  return (
+    <div className="w-full flex flex-wrap md:flex-nowrap justify-between items-center gap-y-3 mb-8 bg-slate-800/80 backdrop-blur p-4 rounded-xl border border-slate-700 shadow-lg">
+      <div className="flex items-center gap-4 relative order-1">
+        <Button
+          variant="secondary"
+          onClick={onBack}
+          className="relative pl-11 pr-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+        >
+          <ShortcutBadge k="Esc" className="left-2 top-1/2 -translate-y-1/2 !border-none !bg-slate-700/50 !text-slate-400" />
+          {t('common.exit')}
+        </Button>
+        <div className="hidden md:block text-indigo-400 font-bold">
+          {gameState.level ? t(titleKey) : ''}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 md:gap-4 order-2">
+        <button
+          onClick={onHelp}
+          className="w-8 h-8 rounded-full bg-slate-700 hover:bg-indigo-500 text-slate-300 hover:text-white flex items-center justify-center transition-colors shadow-lg border border-slate-600"
+          title={t('instructions.title')}
+        >
+          <span className="font-bold font-mono text-sm">?</span>
+        </button>
+
+        <button
+          onClick={togglePreset}
+          className="relative group flex items-center gap-2 px-3 py-1 rounded-lg border border-slate-700 bg-slate-900/50 hover:border-indigo-500/50 transition-colors"
+          title={t('game.toggleSynth')}
+        >
+          <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-300 uppercase tracking-wider inline-block min-w-[60px] text-center">
+            {currentPreset}
+          </span>
+          <div className={`w-2 h-2 rounded-full ${getPresetColor()}`}></div>
+          <ShortcutBadge k="T" className="hidden group-hover:block absolute -top-3 -right-2 !text-[9px]" />
+        </button>
+
+        <div className="font-mono text-lg md:text-xl text-white bg-slate-900 px-3 md:px-4 py-1 rounded-lg border border-slate-700 whitespace-nowrap">
+          <span className="text-slate-500 text-sm mr-2 hidden sm:inline">{t('common.score')}:</span>
+          <span className="text-indigo-400">{gameState.score}</span>
+        </div>
+      </div>
+
+      <div className="md:hidden order-3 w-full pt-2 border-t border-slate-700/50 text-center">
+        <div className="text-indigo-400 font-bold">{gameState.level ? t(titleKey) : ''}</div>
+      </div>
+    </div>
+  );
+};
+
+const PlaybackControl: React.FC<{
+  gameState: GameState;
+  onPlay: () => void;
+}> = ({ gameState, onPlay }) => {
+  const { t } = useTranslation();
+
+  return (
+    <div className="mb-10 flex flex-col items-center relative w-full">
+      <div className="relative group">
+        <div className={`absolute inset-0 bg-indigo-500 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${gameState.isPlaying ? 'animate-pulse' : ''}`}></div>
+        <Button
+          onClick={onPlay}
+          disabled={gameState.isPlaying}
+          className={`relative w-32 h-32 rounded-full flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 border-4 
+            ${gameState.isPlaying ? 'bg-indigo-600 border-indigo-400 shadow-[0_0_40px_rgba(79,70,229,0.4)]' : 'bg-slate-800 border-slate-700 hover:border-indigo-500'}`}
+        >
+          <ShortcutBadge k="P" className="top-6 left-6 !border-indigo-500/30 !bg-slate-900/50" />
+          <span className="text-4xl mb-1 filter drop-shadow-lg">{gameState.isPlaying ? '🔊' : '▶️'}</span>
+          <span className="text-[10px] font-bold tracking-widest uppercase text-slate-300">
+            {gameState.isPlaying ? t('game.playing') : t('game.playAudio')}
+          </span>
+        </Button>
+      </div>
+      <p className="mt-6 text-slate-400 text-sm font-medium tracking-wide text-center">{t('game.listenPrompt')}</p>
+    </div>
+  );
+};
+
+const Slot: React.FC<{
+  slot: string | null;
+  index: number;
+  playingChordIndex: number;
+  gameState: GameState;
+  onSlotClick: (index: number) => void;
+  onPlayCorrect: (index: number) => void;
+}> = ({ slot, index, playingChordIndex, gameState, onSlotClick, onPlayCorrect }) => {
+  const { t } = useTranslation();
+  const isCorrectGuess = gameState.status === 'FEEDBACK' && gameState.currentProgression?.chords[index]?.roman === slot;
+  const isWrongGuess = gameState.status === 'FEEDBACK' && gameState.currentProgression?.chords[index]?.roman !== slot && slot !== null;
+
+  return (
+    <div className="flex flex-col items-center relative">
+      <div
+        onClick={() => onSlotClick(index)}
+        className={`
+            relative w-full aspect-[3/4] md:h-32 rounded-xl border-2 flex flex-col items-center justify-center text-2xl md:text-3xl font-bold cursor-pointer transition-all duration-300 group
+            ${playingChordIndex === index ? 'border-indigo-400 bg-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.3)] scale-105 z-10' : 'border-slate-700 bg-slate-800/50'}
+            ${slot ? 'text-white border-indigo-500/50 bg-slate-800' : 'text-slate-600'}
+            ${isCorrectGuess ? '!border-green-500 !text-green-400 !bg-green-500/10' : ''}
+            ${isWrongGuess ? '!border-red-500 !text-red-400 !bg-red-500/10' : ''}
+            hover:bg-slate-700/50
+            `}
+      >
+        <span className="absolute top-2 left-2 text-[10px] text-slate-600 font-mono group-hover:text-slate-400 transition-colors">
+          [{index + 1}]
+        </span>
+        {gameState.status === 'FEEDBACK' && (
+          <span className="absolute top-2 right-2 text-xs opacity-50 group-hover:opacity-100" title={t('game.playAudio')}>🔊</span>
+        )}
+        {slot || <span className="text-slate-700 text-4xl opacity-20">{index + 1}</span>}
+        {gameState.status === 'FEEDBACK' && slot && (
+          <ShortcutBadge k={`Sh+${index + 1}`} className="bottom-2 text-[8px] px-1 py-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+        )}
+      </div>
+
+      {gameState.status === 'FEEDBACK' && gameState.currentProgression?.chords[index]?.roman !== slot && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onPlayCorrect(index);
+          }}
+          className="absolute -bottom-10 left-0 right-0 animate-slide-up cursor-pointer group/correct hover:scale-105 transition-transform"
+          title={t('game.playCorrect')}
+        >
+          <span className="flex items-center justify-center gap-2 text-green-400 text-sm font-mono font-bold bg-slate-900/90 px-3 py-2 rounded-lg border border-green-500/30 shadow-lg">
+            <span>{gameState.currentProgression?.chords[index]?.roman}</span>
+            <span className="text-xs opacity-60 group-hover/correct:opacity-100">🔊</span>
+          </span>
+          <ShortcutBadge k={`${index + 1}`} className="right-0 -top-2 bg-green-900/80 text-green-200 border-green-700/50 opacity-0 group-hover/correct:opacity-100 transition-opacity" />
+        </button>
+      )}
+    </div>
+  );
+};
+
+const ChordButtons: React.FC<{
+  availableChords: string[];
+  selectedSlots: (string | null)[];
+  onSelectChord: (chord: string) => void;
+}> = ({ availableChords, selectedSlots, onSelectChord }) => {
+  const isFull = (slots: (string | null)[]): slots is string[] => {
+    return slots.every(s => s !== null);
+  };
+
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3 mb-8">
+      {availableChords.map((chord, idx) => (
+        <button
+          key={chord || ""}
+          onClick={() => onSelectChord(chord)}
+          disabled={isFull(selectedSlots)}
+          className="relative p-3 md:p-4 bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95 border border-slate-600 hover:border-indigo-400 group"
+        >
+          <ShortcutBadge k={CHORD_SHORTCUTS[idx] || ""} className="top-1 right-1 opacity-60 group-hover:opacity-100" />
+          {chord || ""}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const SubmitSection: React.FC<{
+  selectedSlots: (string | null)[];
+  onSubmit: () => void;
+}> = ({ selectedSlots, onSubmit }) => {
+  const { t } = useTranslation();
+  
+  const isFull = (slots: (string | null)[]): slots is string[] => {
+    return slots.every(s => s !== null);
+  };
+
+  return (
+    <div className="flex justify-center relative">
+      <Button
+        onClick={onSubmit}
+        disabled={!isFull(selectedSlots)}
+        fullWidth
+        className="max-w-xs py-4 text-lg font-bold shadow-xl shadow-indigo-500/20 relative"
+      >
+        {t('game.submit')}
+        {isFull(selectedSlots) && <ShortcutBadge k="Enter" className="absolute right-4 top-1/2 -translate-y-1/2 bg-indigo-700 border-indigo-400 text-indigo-100" />}
+      </Button>
+      <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden lg:block text-xs text-slate-500 font-mono">
+        <span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">U</span> {t('game.undo')}
+      </div>
+    </div>
+  );
+};
+
 const InstructionsModal: React.FC<{ show: boolean; onClose: () => void }> = ({ show, onClose }) => {
   const { t } = useTranslation();
   if (!show) return null;
@@ -117,6 +317,8 @@ interface Props {
   onBack: () => void;
   onNextRound: () => void;
 }
+
+
 
 // Type Guard
 const isFull = (slots: (string | null)[]): slots is string[] => {
@@ -345,163 +547,51 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [gameState, selectedSlots, currentPreset, t, showHelp]);
 
-  const titleKey = gameState.level ? `levelTitles.${gameState.level.id}` as const : 'levelTitles.1';
-
   return (
     <div className="flex flex-col items-center max-w-4xl mx-auto w-full p-4">
-      
-      {/* Top Bar */}
-      <div className="w-full flex flex-wrap md:flex-nowrap justify-between items-center gap-y-3 mb-8 bg-slate-800/80 backdrop-blur p-4 rounded-xl border border-slate-700 shadow-lg">
-        <div className="flex items-center gap-4 relative order-1">
-          <Button
-            variant="secondary"
-            onClick={onBack}
-            className="relative pl-11 pr-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
-          >
-            <ShortcutBadge k="Esc" className="left-2 top-1/2 -translate-y-1/2 !border-none !bg-slate-700/50 !text-slate-400" />
-            {t('common.exit')}
-          </Button>
-          <div className="hidden md:block text-indigo-400 font-bold">
-            {gameState.level ? t(titleKey) : ''}
-          </div>
-        </div>
+      <TopBar
+        gameState={gameState}
+        onBack={onBack}
+        currentPreset={currentPreset}
+        togglePreset={togglePreset}
+        getPresetColor={getPresetColor}
+        onHelp={() => setShowHelp(true)}
+      />
 
-        <div className="flex items-center gap-3 md:gap-4 order-2">
-          <button
-            onClick={() => setShowHelp(true)}
-            className="w-8 h-8 rounded-full bg-slate-700 hover:bg-indigo-500 text-slate-300 hover:text-white flex items-center justify-center transition-colors shadow-lg border border-slate-600"
-            title={t('instructions.title')}
-          >
-            <span className="font-bold font-mono text-sm">?</span>
-          </button>
+      <PlaybackControl
+        gameState={gameState}
+        onPlay={handlePlay}
+      />
 
-          <button
-            onClick={togglePreset}
-            className="relative group flex items-center gap-2 px-3 py-1 rounded-lg border border-slate-700 bg-slate-900/50 hover:border-indigo-500/50 transition-colors"
-            title={t('game.toggleSynth')}
-          >
-            <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-300 uppercase tracking-wider inline-block min-w-[60px] text-center">
-              {currentPreset}
-            </span>
-            <div className={`w-2 h-2 rounded-full ${getPresetColor()}`}></div>
-            <ShortcutBadge k="T" className="hidden group-hover:block absolute -top-3 -right-2 !text-[9px]" />
-          </button>
-
-          <div className="font-mono text-lg md:text-xl text-white bg-slate-900 px-3 md:px-4 py-1 rounded-lg border border-slate-700 whitespace-nowrap">
-            <span className="text-slate-500 text-sm mr-2 hidden sm:inline">{t('common.score')}:</span>
-            <span className="text-indigo-400">{gameState.score}</span>
-          </div>
-        </div>
-
-        <div className="md:hidden order-3 w-full pt-2 border-t border-slate-700/50 text-center">
-          <div className="text-indigo-400 font-bold">{gameState.level ? t(titleKey) : ''}</div>
-        </div>
-      </div>
-
-      {/* Playback Control */}
-      <div className="mb-10 flex flex-col items-center relative w-full">
-        <div className="relative group">
-          <div className={`absolute inset-0 bg-indigo-500 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${gameState.isPlaying ? 'animate-pulse' : ''}`}></div>
-          <Button
-            onClick={handlePlay}
-            disabled={gameState.isPlaying}
-            className={`relative w-32 h-32 rounded-full flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 border-4 
-              ${gameState.isPlaying ? 'bg-indigo-600 border-indigo-400 shadow-[0_0_40px_rgba(79,70,229,0.4)]' : 'bg-slate-800 border-slate-700 hover:border-indigo-500'}`}
-          >
-            <ShortcutBadge k="P" className="top-6 left-6 !border-indigo-500/30 !bg-slate-900/50" />
-            <span className="text-4xl mb-1 filter drop-shadow-lg">{gameState.isPlaying ? '🔊' : '▶️'}</span>
-            <span className="text-[10px] font-bold tracking-widest uppercase text-slate-300">
-              {gameState.isPlaying ? t('game.playing') : t('game.playAudio')}
-            </span>
-          </Button>
-        </div>
-        <p className="mt-6 text-slate-400 text-sm font-medium tracking-wide text-center">{t('game.listenPrompt')}</p>
-      </div>
-
-      {/* Slots */}
       <div className="grid grid-cols-4 gap-3 md:gap-6 mb-10 w-full max-w-3xl px-2">
-        {selectedSlots.map((slot, idx) => {
-          const isCorrectGuess = gameState.status === 'FEEDBACK' && gameState.currentProgression?.chords[idx]?.roman === slot;
-          const isWrongGuess = gameState.status === 'FEEDBACK' && gameState.currentProgression?.chords[idx]?.roman !== slot && slot !== null;
-
-          return (
-            <div key={idx} className="flex flex-col items-center relative">
-              <div
-                onClick={() => handleSlotClick(idx)}
-                className={`
-                    relative w-full aspect-[3/4] md:h-32 rounded-xl border-2 flex flex-col items-center justify-center text-2xl md:text-3xl font-bold cursor-pointer transition-all duration-300 group
-                    ${playingChordIndex === idx ? 'border-indigo-400 bg-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.3)] scale-105 z-10' : 'border-slate-700 bg-slate-800/50'}
-                    ${slot ? 'text-white border-indigo-500/50 bg-slate-800' : 'text-slate-600'}
-                    ${isCorrectGuess ? '!border-green-500 !text-green-400 !bg-green-500/10' : ''}
-                    ${isWrongGuess ? '!border-red-500 !text-red-400 !bg-red-500/10' : ''}
-                    hover:bg-slate-700/50
-                    `}
-              >
-                <span className="absolute top-2 left-2 text-[10px] text-slate-600 font-mono group-hover:text-slate-400 transition-colors">
-                  [{idx + 1}]
-                </span>
-                {gameState.status === 'FEEDBACK' && (
-                  <span className="absolute top-2 right-2 text-xs opacity-50 group-hover:opacity-100" title={t('game.playAudio')}>🔊</span>
-                )}
-                {slot || <span className="text-slate-700 text-4xl opacity-20">{idx + 1}</span>}
-                {gameState.status === 'FEEDBACK' && slot && (
-                  <ShortcutBadge k={`Sh+${idx + 1}`} className="bottom-2 text-[8px] px-1 py-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                )}
-              </div>
-
-              {gameState.status === 'FEEDBACK' && gameState.currentProgression?.chords[idx]?.roman !== slot && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const correct = gameState.currentProgression?.chords[idx]?.roman;
-                    if (correct) playSingleChord(correct);
-                  }}
-                  className="absolute -bottom-10 left-0 right-0 animate-slide-up cursor-pointer group/correct hover:scale-105 transition-transform"
-                  title={t('game.playCorrect')}
-                >
-                  <span className="flex items-center justify-center gap-2 text-green-400 text-sm font-mono font-bold bg-slate-900/90 px-3 py-2 rounded-lg border border-green-500/30 shadow-lg">
-                    <span>{gameState.currentProgression?.chords[idx]?.roman}</span>
-                    <span className="text-xs opacity-60 group-hover/correct:opacity-100">🔊</span>
-                  </span>
-                  <ShortcutBadge k={`${idx + 1}`} className="right-0 -top-2 bg-green-900/80 text-green-200 border-green-700/50 opacity-0 group-hover/correct:opacity-100 transition-opacity" />
-                </button>
-              )}
-            </div>
-          );
-        })}
+        {selectedSlots.map((slot, idx) => (
+          <Slot
+            key={idx}
+            slot={slot}
+            index={idx}
+            playingChordIndex={playingChordIndex}
+            gameState={gameState}
+            onSlotClick={handleSlotClick}
+            onPlayCorrect={(index) => {
+              const correct = gameState.currentProgression?.chords[index]?.roman;
+              if (correct) playSingleChord(correct);
+            }}
+          />
+        ))}
       </div>
 
-      {/* Inputs or Feedback */}
       {gameState.status !== 'FEEDBACK' ? (
         <div className="w-full max-w-3xl animate-fade-in">
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3 mb-8">
-            {gameState.level?.availableChords.map((chord, idx) => (
-              <button
-                key={chord || ""}
-                onClick={() => handleSelectChord(chord)}
-                disabled={isFull(selectedSlots)}
-                className="relative p-3 md:p-4 bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95 border border-slate-600 hover:border-indigo-400 group"
-              >
-                <ShortcutBadge k={CHORD_SHORTCUTS[idx] || ""} className="top-1 right-1 opacity-60 group-hover:opacity-100" />
-                {chord || ""}
-              </button>
-            ))}
-          </div>
+          <ChordButtons
+            availableChords={[...(gameState.level?.availableChords || [])]}
+            selectedSlots={selectedSlots}
+            onSelectChord={handleSelectChord}
+          />
 
-          <div className="flex justify-center relative">
-            <Button
-              onClick={handleSubmit}
-              disabled={!isFull(selectedSlots)}
-              fullWidth
-              className="max-w-xs py-4 text-lg font-bold shadow-xl shadow-indigo-500/20 relative"
-            >
-              {t('game.submit')}
-              {isFull(selectedSlots) && <ShortcutBadge k="Enter" className="absolute right-4 top-1/2 -translate-y-1/2 bg-indigo-700 border-indigo-400 text-indigo-100" />}
-            </Button>
-            <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden lg:block text-xs text-slate-500 font-mono">
-              <span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">U</span> {t('game.undo')}
-            </div>
-          </div>
+          <SubmitSection
+            selectedSlots={selectedSlots}
+            onSubmit={handleSubmit}
+          />
         </div>
       ) : (
         <FeedbackView 
