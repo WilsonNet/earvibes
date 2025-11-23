@@ -27,6 +27,8 @@ If you are using an AI agent to modify this codebase, please adhere to the follo
 5.  **State Management**: 
     *   The app uses a centralized `GameState` object in `App.tsx`.
     *   Avoid creating parallel state trees unless necessary for a specific isolated component.
+6.  **Context7 Integration**: Always use Context7 when you need code generation, setup or configuration steps, or library/API documentation. This means you should automatically use the Context7 MCP tools to resolve library id and get library docs without me having to explicitly ask.
+7.  **Development Server Management**: Always check if the development server is already running before starting it. If it's running, just access the website instead of starting a new server. Use `curl -s http://localhost:5173` or similar to check if server is responsive.
 
 ## Prompt Engineering Tips
 
