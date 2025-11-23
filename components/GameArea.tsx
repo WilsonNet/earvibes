@@ -35,7 +35,7 @@ const TopBar: React.FC<{
         <Button
           variant="secondary"
           onClick={onBack}
-          className="relative pl-11 pr-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+          className="relative pl-4 pr-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2 sm:pl-11"
         >
           <ShortcutBadge k="Esc" className="left-2 top-1/2 -translate-y-1/2 !border-none !bg-slate-700/50 !text-slate-400" />
           {t('common.exit')}
