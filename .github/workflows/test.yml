@@ -46,17 +46,5 @@ jobs:
       - name: Run tests
         run: pnpm test -- --run
 
-      - name: Run tests with coverage
-        run: pnpm test:coverage
-
       - name: Build project
         run: pnpm run build
-
-      - name: Upload coverage to Codecov
-        if: matrix.node-version == 20
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: true
