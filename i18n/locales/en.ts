@@ -212,22 +212,23 @@ Listen for the **V → I** movement. It sounds like "The End" of a sentence.
 ## Level 2: The Natural Minor Scale
 
 **Concept**
-Welcome to the **Minor Mode**. Songs here sound sadder, more serious, or "epic". The "Home" chord is now minor (**i**).
+Welcome to the **Natural Minor Scale**. Songs here often sound sadder, more serious, or can evoke an "epic" feeling. The "Home" chord is now minor (**i**).
 
 **The Chords**
 *   **i (One)**: The new Home. Serious and stable.
-*   **III (Three)**: The "Relative Major". A burst of light in the darkness.
+*   **III (Three)**: The "Relative Major". A burst of light and hope in the minor landscape.
 *   **iv (Four)**: Deeply sad and emotional.
-*   **VI (Six)**: Heroic and "epic" sounding. Think superhero movies.
-*   **VII (Seven)**: A strong major chord, often used in rock music.
+*   **v (Five minor)**: The minor dominant. It has a slightly softer, more introspective pull back to 'i' compared to a major 'V'.
+*   **VI (Six)**: A major chord that can feel heroic, grand, or like a "deceptive" surprise.
+*   **VII (Seven)**: A strong major chord, often used in rock music due to its bold sound.
 
 **Listening Tip**
-Confusing **i** and **VI**? The **i** feels like rest. The **VI** feels like a surprise lift.
+Listen for the quality of the 'v' chord (minor) versus what would be a 'V' chord (major). The minor 'v' creates a less urgent, more subtle resolution back to 'i'.
 
 **Song Examples**
-1. **Hello** - Adele
-2. **All Along the Watchtower** - Jimi Hendrix
-3. **Billie Jean** - Michael Jackson
+1. **Stairway to Heaven** - Led Zeppelin (verse sections often use natural minor harmony)
+2. **The Sound of Silence** - Simon & Garfunkel (folk-style minor progressions)
+3. **Black Sabbath** - Black Sabbath (early metal often uses natural minor)
 `,
     '3': `
 ## Level 3: The Dominant 7th (V7)

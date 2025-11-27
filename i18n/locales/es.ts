@@ -214,22 +214,23 @@ Escucha el movimiento **V → I**. Suena como "El Fin" de una oración.
 ## Nivel 2: La Escala Menor Natural
 
 **Concepto**
-Bienvenido al **Modo Menor**. Las canciones aquí suenan más tristes, serias o "épicas". El acorde de "Inicio" es ahora menor (**i**).
+Bienvenido a la **Escala Menor Natural**. Las canciones aquí a menudo suenan más tristes, más serias o pueden evocar un sentimiento "épico". El acorde "Hogar" ahora es menor (**i**).
 
 **Los Acordes**
-*   **i (Uno)**: El nuevo Inicio. Serio y estable.
-*   **III (Tres)**: El "Relativo Mayor". Un rayo de luz en la oscuridad.
+*   **i (Uno)**: El nuevo Hogar. Serio y estable.
+*   **III (Tres)**: El "Relativo Mayor". Un estallido de luz y esperanza en el paisaje menor.
 *   **iv (Cuatro)**: Profundamente triste y emocional.
-*   **VI (Seis)**: Heroico y "épico". Piensa en películas de superhéroes.
-*   **VII (Siete)**: Un acorde mayor fuerte, a menudo usado en música rock.
+*   **v (Cinco menor)**: El dominante menor. Tiene una atracción ligeramente más suave e introspectiva de regreso a 'i' en comparación con un 'V' mayor.
+*   **VI (Seis)**: Un acorde mayor que puede sentirse heroico, grandioso o como una sorpresa "engañosa".
+*   **VII (Siete)**: Un acorde mayor fuerte, a menudo utilizado en la música rock por su sonido audaz.
 
-**Listening Tip**
-¿Confundiendo **i** y **VI**? El **i** se siente como descanso. El **VI** se siente como una elevación sorpresa.
+**Consejo de Escucha**
+Escucha la cualidad del acorde 'v' (menor) en comparación con lo que sería un acorde 'V' (mayor). El 'v' menor crea una resolución menos urgente y más sutil de regreso a 'i'.
 
 **Ejemplos de Canciones**
-1. **Hello** - Adele
-2. **All Along the Watchtower** - Jimi Hendrix
-3. **Billie Jean** - Michael Jackson
+1. **Stairway to Heaven** - Led Zeppelin (las secciones del verso a menudo usan armonía menor natural)
+2. **The Sound of Silence** - Simon & Garfunkel (progresiones menores de estilo folk)
+3. **Black Sabbath** - Black Sabbath (el metal temprano a menudo usa menor natural)
 `,
     '3': `
 ## Nivel 3: El Dominante 7 (V7)
