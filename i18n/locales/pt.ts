@@ -213,22 +213,23 @@ Ouça o movimento **V → I**. Soa como "O Fim" de uma frase.
 ## Nível 2: A Escala Menor Natural
 
 **Conceito**
-Bem-vindo ao **Modo Menor**. As músicas aqui soam mais tristes, sérias ou "épicas". O acorde "Casa" agora é menor (**i**).
+Bem-vindo à **Escala Menor Natural**. As músicas aqui muitas vezes soam mais tristes, mais sérias, ou podem evocar um sentimento "épico". O acorde "Casa" agora é menor (**i**).
 
 **Os Acordes**
 *   **i (Um)**: A nova Casa. Sério e estável.
-*   **III (Três)**: O "Relativo Maior". Um raio de luz na escuridão.
+*   **III (Três)**: O "Relativo Maior". Uma explosão de luz e esperança na paisagem menor.
 *   **iv (Quatro)**: Profundamente triste e emocional.
-*   **VI (Seis)**: Heroico e "épico". Pense em filmes de super-heróis.
-*   **VII (Sete)**: Um acorde maior forte, frequentemente usado em rock.
+*   **v (Cinco menor)**: A dominante menor. Tem uma atração ligeiramente mais suave e introspectiva de volta para 'i' em comparação com um 'V' maior.
+*   **VI (Seis)**: Um acorde maior que pode parecer heroico, grandioso, ou como uma surpresa "enganosa".
+*   **VII (Sete)**: Um acorde maior forte, frequentemente usado na música rock devido ao seu som audacioso.
 
 **Dica de Audição**
-Confundindo **i** e **VI**? O **i** parece descanso. O **VI** parece uma elevação surpresa.
+Ouça a qualidade do acorde 'v' (menor) em comparação com o que seria um acorde 'V' (maior). O 'v' menor cria uma resolução menos urgente e mais sutil de volta para 'i'.
 
 **Exemplos de Músicas**
-1. **Hello** - Adele
-2. **All Along the Watchtower** - Jimi Hendrix
-3. **Billie Jean** - Michael Jackson
+1. **Stairway to Heaven** - Led Zeppelin (as seções do verso frequentemente usam harmonia menor natural)
+2. **The Sound of Silence** - Simon & Garfunkel (progressões menores de estilo folk)
+3. **Black Sabbath** - Black Sabbath (o metal antigo frequentemente usa menor natural)
 `,
     '3': `
 ## Nível 3: A Dominante 7 (V7)
