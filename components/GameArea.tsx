@@ -229,12 +229,14 @@ const ChordButtons: React.FC<{
 const SubmitSection: React.FC<{
   selectedSlots: (string | null)[];
   onSubmit: () => void;
-}> = ({ selectedSlots, onSubmit }) => {
+  onUndo: () => void;
+}> = ({ selectedSlots, onSubmit, onUndo }) => {
   const { t } = useTranslation();
 
   const isFull = (slots: (string | null)[]): slots is string[] => {
     return slots.every((s) => s !== null);
   };
+  const canUndo = selectedSlots.some((slot) => slot !== null);
 
   return (
     <div className="relative flex justify-center">
@@ -252,10 +254,16 @@ const SubmitSection: React.FC<{
           />
         )}
       </Button>
-      <div className="-right-4 -translate-y-1/2 absolute top-1/2 hidden font-mono text-slate-500 text-xs lg:block">
+      <button
+        type="button"
+        onClick={onUndo}
+        disabled={!canUndo}
+        title={t('game.undo')}
+        className="-right-4 -translate-y-1/2 absolute top-1/2 hidden items-center gap-2 font-mono text-slate-500 text-xs transition-opacity disabled:cursor-not-allowed disabled:opacity-40 lg:flex"
+      >
         <span className="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5">U</span>{' '}
         {t('game.undo')}
-      </div>
+      </button>
     </div>
   );
 };
@@ -571,6 +579,17 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
     [gameState.status, selectedSlots]
   );
 
+  const handleUndo = useCallback((): void => {
+    if (gameState.status === 'FEEDBACK') return;
+    const lastFilledIndex = selectedSlots.reduce((lastIndex, slot, idx) => {
+      return slot !== null ? idx : lastIndex;
+    }, -1);
+
+    if (lastFilledIndex !== -1) {
+      handleClearSlot(lastFilledIndex);
+    }
+  }, [gameState.status, selectedSlots, handleClearSlot]);
+
   const handleSubmit = useCallback(async (): Promise<void> => {
     if (!isFull(selectedSlots)) return;
 
@@ -708,13 +727,7 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
 
       if (key === 'u' || key === 'backspace') {
         e.preventDefault();
-        const lastFilledIndex = selectedSlots.reduce((lastIndex, slot, idx) => {
-          return slot !== null ? idx : lastIndex;
-        }, -1);
-
-        if (lastFilledIndex !== -1) {
-          handleClearSlot(lastFilledIndex);
-        }
+        handleUndo();
         return true;
       }
 
@@ -732,7 +745,15 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
 
       return false;
     },
-    [selectedSlots, gameState.level, handlePlay, handleSubmit, handleClearSlot, handleSelectChord]
+    [
+      selectedSlots,
+      gameState.level,
+      handlePlay,
+      handleSubmit,
+      handleClearSlot,
+      handleSelectChord,
+      handleUndo,
+    ]
   );
 
   // Keyboard Shortcuts Logic
@@ -788,7 +809,11 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
             onSelectChord={handleSelectChord}
           />
 
-          <SubmitSection selectedSlots={selectedSlots} onSubmit={handleSubmit} />
+          <SubmitSection
+            selectedSlots={selectedSlots}
+            onSubmit={handleSubmit}
+            onUndo={handleUndo}
+          />
         </div>
       ) : (
         <FeedbackView

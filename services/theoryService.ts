@@ -137,15 +137,15 @@ const generateKeyMap = (key: Key, isMinor: boolean = false): Record<string, stri
 
   // Generate diatonic chords based on scale degrees
   const scaleDegrees = isMinor
-    ? ['i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII']
-    : ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
+    ? (['i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII'] as const)
+    : (['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'] as const);
 
   scaleDegrees.forEach((degree, index) => {
     const chordType = ROMAN_TO_CHORD_TYPE[degree];
     if (chordType) {
       const semitoneOffset = isMinor
-        ? MINOR_SCALE_SEMITONES[index]!
-        : MAJOR_SCALE_SEMITONES[index]!;
+        ? (MINOR_SCALE_SEMITONES[index] ?? 0)
+        : (MAJOR_SCALE_SEMITONES[index] ?? 0);
       const degreeRoot = transposeNote(`${rootNote}4`, semitoneOffset);
       const rootNoteName = degreeRoot.slice(0, -1);
       const octaveStr = degreeRoot.slice(-1);
@@ -185,11 +185,17 @@ const generateKeyMap = (key: Key, isMinor: boolean = false): Record<string, stri
       if (chordSymbol.startsWith('b')) {
         const roman = chordSymbol.slice(1);
         const romanIndex = ROMAN_NUMERALS_MAP.get(roman);
-        if (romanIndex !== undefined) rootSemitone = ROMAN_SEMITONES[romanIndex]! - 1;
+        if (romanIndex !== undefined) {
+          const base = ROMAN_SEMITONES[romanIndex];
+          if (base !== undefined) rootSemitone = base - 1;
+        }
       } else if (chordSymbol.includes('7') && !chordSymbol.includes('b')) {
         const roman = chordSymbol.replace('7', '');
         const romanIndex = ROMAN_NUMERALS_MAP.get(roman);
-        if (romanIndex !== undefined) rootSemitone = ROMAN_SEMITONES[romanIndex]!;
+        if (romanIndex !== undefined) {
+          const base = ROMAN_SEMITONES[romanIndex];
+          if (base !== undefined) rootSemitone = base;
+        }
       } else if (chordSymbol === 'iv') {
         rootSemitone = 5; // IV in major
       } else if (chordSymbol === 'I+') {
@@ -211,7 +217,7 @@ const generateKeyMap = (key: Key, isMinor: boolean = false): Record<string, stri
   // Special case for City Pop chords
   if (key === 'C') {
     map['Gm7'] = ['G3', 'Bb3', 'D4', 'F4']; // Lower octave for warmth
-    map['IV/V'] = ['G3', 'F4', 'A4', 'C5']; // F/G slash chord
+    map['IV/V'] = ['G3', 'F4', 'A4', 'C5']; // F/G slash chord (keeps slash notation)
   }
 
   return map;
@@ -220,7 +226,10 @@ const generateKeyMap = (key: Key, isMinor: boolean = false): Record<string, stri
 // Helper function to select random key
 const getRandomKey = (isMinor: boolean = false): Key => {
   const keys = isMinor ? MINOR_KEYS : MAJOR_KEYS;
-  return keys[Math.floor(Math.random() * keys.length)]!;
+  const index = Math.floor(Math.random() * keys.length);
+  const key = keys[index];
+  // Fallback to first key if index is somehow out of range (should not happen)
+  return key ?? keys[0];
 };
 
 // Legacy exports for backward compatibility
@@ -278,7 +287,7 @@ const getLevelConfig = (
   return match(type)
     .with(LevelType.MAJOR, () => {
       const randomKey = getRandomKey(false);
-      const keyMap = generateKeyMap(randomKey, false);
+      const keyMap: Record<string, string[]> = generateKeyMap(randomKey, false);
       return {
         key: `${randomKey} Major`,
         map: keyMap,

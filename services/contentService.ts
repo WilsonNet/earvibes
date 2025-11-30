@@ -70,13 +70,20 @@ export const fetchFeedback = async (
   // 2. Dynamic Feedback Construction
   const intro = t('feedback.close', { index: (errorIndex + 1) as number });
 
-  const comparisonParams: Record<string, string | number> = {
+  type ComparisonParams = {
+    user: string;
+    correct: string;
+    userDesc?: string;
+    correctDesc?: string;
+  };
+
+  const comparisonParams: ComparisonParams = {
     user: userChord || '',
     correct: correctChord || '',
   };
 
-  if (userDesc) comparisonParams['userDesc'] = userDesc;
-  if (correctDesc) comparisonParams['correctDesc'] = correctDesc;
+  if (userDesc) comparisonParams.userDesc = userDesc;
+  if (correctDesc) comparisonParams.correctDesc = correctDesc;
 
   const comparison = t('feedback.comparison', comparisonParams);
 
