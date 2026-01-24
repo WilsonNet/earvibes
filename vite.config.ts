@@ -1,6 +1,6 @@
-import react from '@vitejs/plugin-react';
-import { defineConfig, loadEnv, PluginOption } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig, loadEnv, type PluginOption } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const _env = loadEnv(mode, process.cwd(), '');
