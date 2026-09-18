@@ -1,7 +1,8 @@
 import type React from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from '../i18n/I18nContext';
+import { isRepeatClick } from '../lib/utils';
 import { audioService } from '../services/audioService';
 import { fetchFeedback } from '../services/contentService';
 import { getChordNotes } from '../services/theoryService';
@@ -105,7 +106,10 @@ const PlaybackControl: React.FC<{
           className={`absolute inset-0 rounded-full bg-indigo-500 opacity-20 blur-xl transition-opacity group-hover:opacity-40 ${gameState.isPlaying ? 'animate-pulse' : ''}`}
         ></div>
         <Button
-          onClick={onPlay}
+          onClick={(e) => {
+            if (isRepeatClick(e)) return;
+            onPlay();
+          }}
           disabled={gameState.isPlaying}
           className={`relative flex h-32 w-32 transform flex-col items-center justify-center rounded-full border-4 transition-all hover:scale-105 active:scale-95 ${gameState.isPlaying ? 'border-indigo-400 bg-indigo-600 shadow-[0_0_40px_rgba(79,70,229,0.4)]' : 'border-slate-700 bg-slate-800 hover:border-indigo-500'}`}
         >
@@ -145,7 +149,10 @@ const Slot: React.FC<{
     <div className="relative flex flex-col items-center">
       <button
         type="button"
-        onClick={() => onSlotClick(index)}
+        onClick={(e) => {
+          if (isRepeatClick(e)) return;
+          onSlotClick(index);
+        }}
         className={`group relative flex aspect-[3/4] w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 font-bold text-2xl transition-all duration-300 md:h-32 md:text-3xl ${playingChordIndex === index ? 'z-10 scale-105 border-indigo-400 bg-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.3)]' : 'border-slate-700 bg-slate-800/50'}
             ${slot ? 'border-indigo-500/50 bg-slate-800 text-white' : 'text-slate-600'}
             ${isCorrectGuess ? '!border-green-500 !text-green-400 !bg-green-500/10' : ''}
@@ -177,6 +184,7 @@ const Slot: React.FC<{
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              if (isRepeatClick(e)) return;
               onPlayCorrect(index);
             }}
             className="-bottom-10 group/correct absolute right-0 left-0 animate-slide-up cursor-pointer transition-transform hover:scale-105"
@@ -211,7 +219,10 @@ const ChordButtons: React.FC<{
         <button
           type="button"
           key={chord || ''}
-          onClick={() => onSelectChord(chord)}
+          onClick={(e) => {
+            if (isRepeatClick(e)) return;
+            onSelectChord(chord);
+          }}
           disabled={isFull(selectedSlots)}
           className="group relative transform rounded-xl border border-slate-600 bg-slate-700 p-3 font-bold text-lg text-white shadow-lg shadow-slate-900/20 transition-all hover:border-indigo-400 hover:bg-slate-600 active:scale-95 active:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-50 md:p-4"
         >
@@ -241,7 +252,10 @@ const SubmitSection: React.FC<{
   return (
     <div className="relative flex justify-center">
       <Button
-        onClick={onSubmit}
+        onClick={(e) => {
+          if (isRepeatClick(e)) return;
+          onSubmit();
+        }}
         disabled={!isFull(selectedSlots)}
         fullWidth
         className="relative max-w-xs py-4 font-bold text-lg shadow-indigo-500/20 shadow-xl"
@@ -256,7 +270,10 @@ const SubmitSection: React.FC<{
       </Button>
       <button
         type="button"
-        onClick={onUndo}
+        onClick={(e) => {
+          if (isRepeatClick(e)) return;
+          onUndo();
+        }}
         disabled={!canUndo}
         title={t('game.undo')}
         className="-right-4 -translate-y-1/2 absolute top-1/2 hidden items-center gap-2 font-mono text-slate-500 text-xs transition-opacity disabled:cursor-not-allowed disabled:opacity-40 lg:flex"
@@ -435,7 +452,10 @@ const FeedbackView: React.FC<{
       </div>
 
       <Button
-        onClick={onNext}
+        onClick={(e) => {
+          if (isRepeatClick(e)) return;
+          onNext();
+        }}
         fullWidth
         variant="primary"
         className="relative py-4 font-bold text-lg"
@@ -471,6 +491,7 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
   const [playingChordIndex, setPlayingChordIndex] = useState<number>(-1);
   const [currentPreset, setCurrentPreset] = useState<SynthPreset>('PIANO');
   const [showHelp, setShowHelp] = useState(false);
+  const submittingRef = useRef(false);
 
   // Sync audio service
   useEffect(() => {
@@ -591,7 +612,8 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
   }, [gameState.status, selectedSlots, handleClearSlot]);
 
   const handleSubmit = useCallback(async (): Promise<void> => {
-    if (!isFull(selectedSlots)) return;
+    if (submittingRef.current || !isFull(selectedSlots)) return;
+    submittingRef.current = true;
 
     // Type guard ensures selectedSlots is string[] here
     const userAnswers = selectedSlots;
@@ -625,6 +647,7 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
   }, [selectedSlots, gameState.currentProgression, gameState.level, t, locale, setGameState]);
 
   const handleInternalNextRound = useCallback((): void => {
+    submittingRef.current = false;
     setSelectedSlots([null, null, null, null]);
     setPlayingChordIndex(-1);
     onNextRound();

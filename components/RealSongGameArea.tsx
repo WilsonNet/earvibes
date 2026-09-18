@@ -2,6 +2,7 @@ import type React from 'react';
 import { useRef, useState } from 'react';
 import { LEVELS } from '../constants';
 import { useTranslation } from '../i18n/I18nContext';
+import { isRepeatClick } from '../lib/utils';
 import type { GameState, RealSong } from '../types';
 import { Button } from './Button';
 
@@ -75,7 +76,7 @@ export const RealSongGameArea: React.FC<Props> = ({ song, onBack, setGameState }
   };
 
   const handleSubmit = () => {
-    if (!isFull(selectedSlots)) return;
+    if (showFeedback || !isFull(selectedSlots)) return;
 
     const correct = selectedSlots.every((slot, idx) => slot === song.progression[idx]);
     setIsCorrect(correct);
@@ -135,7 +136,10 @@ export const RealSongGameArea: React.FC<Props> = ({ song, onBack, setGameState }
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60">
             <button
               type="button"
-              onClick={handlePlay}
+              onClick={(e) => {
+                if (isRepeatClick(e)) return;
+                handlePlay();
+              }}
               className="z-20 flex h-20 w-20 transform items-center justify-center rounded-full bg-red-600 text-white shadow-lg transition-transform hover:scale-110 hover:bg-red-500"
             >
               <svg
@@ -158,7 +162,10 @@ export const RealSongGameArea: React.FC<Props> = ({ song, onBack, setGameState }
         {isPlaying && (
           <div className="pointer-events-none absolute right-4 bottom-4 z-10">
             <Button
-              onClick={handlePlay}
+              onClick={(e) => {
+                if (isRepeatClick(e)) return;
+                handlePlay();
+              }}
               variant="secondary"
               className="pointer-events-auto bg-slate-900/80 text-xs backdrop-blur"
             >
@@ -179,7 +186,10 @@ export const RealSongGameArea: React.FC<Props> = ({ song, onBack, setGameState }
             <button
               type="button"
               key={idx}
-              onClick={() => handleClearSlot(idx)}
+              onClick={(e) => {
+                if (isRepeatClick(e)) return;
+                handleClearSlot(idx);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   handleClearSlot(idx);
@@ -215,11 +225,25 @@ export const RealSongGameArea: React.FC<Props> = ({ song, onBack, setGameState }
             {isCorrect ? t('feedback.perfect') : t('feedback.defaultIncorrect')}
           </h3>
           {isCorrect ? (
-            <Button onClick={onBack} variant="primary" className="min-w-[150px]">
+            <Button
+              onClick={(e) => {
+                if (isRepeatClick(e)) return;
+                onBack();
+              }}
+              variant="primary"
+              className="min-w-[150px]"
+            >
               {t('common.back')}
             </Button>
           ) : (
-            <Button onClick={handleRetry} variant="secondary" className="min-w-[150px]">
+            <Button
+              onClick={(e) => {
+                if (isRepeatClick(e)) return;
+                handleRetry();
+              }}
+              variant="secondary"
+              className="min-w-[150px]"
+            >
               Retry
             </Button>
           )}
@@ -231,7 +255,10 @@ export const RealSongGameArea: React.FC<Props> = ({ song, onBack, setGameState }
               <button
                 type="button"
                 key={chord}
-                onClick={() => handleSelectChord(chord)}
+                onClick={(e) => {
+                  if (isRepeatClick(e)) return;
+                  handleSelectChord(chord);
+                }}
                 disabled={isFull(selectedSlots)}
                 className="relative rounded-xl border border-slate-600 bg-slate-700 p-3 font-bold text-lg text-white shadow-lg hover:border-indigo-400 hover:bg-slate-600 active:bg-slate-500 disabled:opacity-50 md:p-4"
               >
@@ -241,7 +268,10 @@ export const RealSongGameArea: React.FC<Props> = ({ song, onBack, setGameState }
           </div>
           <div className="flex justify-center">
             <Button
-              onClick={handleSubmit}
+              onClick={(e) => {
+                if (isRepeatClick(e)) return;
+                handleSubmit();
+              }}
               disabled={!isFull(selectedSlots)}
               fullWidth
               className="max-w-xs py-3 font-bold text-lg"
