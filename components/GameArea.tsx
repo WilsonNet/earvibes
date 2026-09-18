@@ -1,11 +1,11 @@
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from '../i18n/I18nContext';
-import { isRepeatClick } from '../lib/utils';
 import { audioService } from '../services/audioService';
 import { fetchFeedback } from '../services/contentService';
-import { getChordNotes } from '../services/theoryService';
+import { type GameAction, isSelectionComplete } from '../services/gameReducer';
+import { generateProgression, getChordNotes } from '../services/theoryService';
 import type { GameState, SynthPreset } from '../types';
 import { LevelType } from '../types';
 import { Button } from './Button';
@@ -24,7 +24,7 @@ const ShortcutBadge = ({ k, className = '' }: { k: string; className?: string })
 
 const TopBar: React.FC<{
   gameState: GameState;
-  onBack: () => void;
+  onBack: (isRepeatClick?: boolean) => void;
   currentPreset: SynthPreset;
   togglePreset: () => void;
   getPresetColor: () => string;
@@ -40,7 +40,7 @@ const TopBar: React.FC<{
       <div className="relative order-1 flex items-center gap-4">
         <Button
           variant="secondary"
-          onClick={onBack}
+          onClick={(e) => onBack(e.detail > 1)}
           className="relative flex items-center gap-2 py-2 pr-4 pl-4 font-bold text-xs uppercase tracking-wider sm:pl-11"
         >
           <ShortcutBadge
@@ -95,7 +95,7 @@ const TopBar: React.FC<{
 
 const PlaybackControl: React.FC<{
   gameState: GameState;
-  onPlay: () => void;
+  onPlay: (isRepeatClick?: boolean) => void;
 }> = ({ gameState, onPlay }) => {
   const { t } = useTranslation();
 
@@ -106,10 +106,7 @@ const PlaybackControl: React.FC<{
           className={`absolute inset-0 rounded-full bg-indigo-500 opacity-20 blur-xl transition-opacity group-hover:opacity-40 ${gameState.isPlaying ? 'animate-pulse' : ''}`}
         ></div>
         <Button
-          onClick={(e) => {
-            if (isRepeatClick(e)) return;
-            onPlay();
-          }}
+          onClick={(e) => onPlay(e.detail > 1)}
           disabled={gameState.isPlaying}
           className={`relative flex h-32 w-32 transform flex-col items-center justify-center rounded-full border-4 transition-all hover:scale-105 active:scale-95 ${gameState.isPlaying ? 'border-indigo-400 bg-indigo-600 shadow-[0_0_40px_rgba(79,70,229,0.4)]' : 'border-slate-700 bg-slate-800 hover:border-indigo-500'}`}
         >
@@ -134,8 +131,8 @@ const Slot: React.FC<{
   index: number;
   playingChordIndex: number;
   gameState: GameState;
-  onSlotClick: (index: number) => void;
-  onPlayCorrect: (index: number) => void;
+  onSlotClick: (index: number, isRepeatClick?: boolean) => void;
+  onPlayCorrect: (index: number, isRepeatClick?: boolean) => void;
 }> = ({ slot, index, playingChordIndex, gameState, onSlotClick, onPlayCorrect }) => {
   const { t } = useTranslation();
   const isCorrectGuess =
@@ -149,10 +146,7 @@ const Slot: React.FC<{
     <div className="relative flex flex-col items-center">
       <button
         type="button"
-        onClick={(e) => {
-          if (isRepeatClick(e)) return;
-          onSlotClick(index);
-        }}
+        onClick={(e) => onSlotClick(index, e.detail > 1)}
         className={`group relative flex aspect-[3/4] w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 font-bold text-2xl transition-all duration-300 md:h-32 md:text-3xl ${playingChordIndex === index ? 'z-10 scale-105 border-indigo-400 bg-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.3)]' : 'border-slate-700 bg-slate-800/50'}
             ${slot ? 'border-indigo-500/50 bg-slate-800 text-white' : 'text-slate-600'}
             ${isCorrectGuess ? '!border-green-500 !text-green-400 !bg-green-500/10' : ''}
@@ -184,8 +178,7 @@ const Slot: React.FC<{
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              if (isRepeatClick(e)) return;
-              onPlayCorrect(index);
+              onPlayCorrect(index, e.detail > 1);
             }}
             className="-bottom-10 group/correct absolute right-0 left-0 animate-slide-up cursor-pointer transition-transform hover:scale-105"
             title={t('game.playCorrect')}
@@ -207,23 +200,16 @@ const Slot: React.FC<{
 const ChordButtons: React.FC<{
   availableChords: string[];
   selectedSlots: (string | null)[];
-  onSelectChord: (chord: string) => void;
+  onSelectChord: (chord: string, isRepeatClick: boolean) => void;
 }> = ({ availableChords, selectedSlots, onSelectChord }) => {
-  const isFull = (slots: (string | null)[]): slots is string[] => {
-    return slots.every((s) => s !== null);
-  };
-
   return (
     <div className="mb-8 grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">
       {availableChords.map((chord, idx) => (
         <button
           type="button"
           key={chord || ''}
-          onClick={(e) => {
-            if (isRepeatClick(e)) return;
-            onSelectChord(chord);
-          }}
-          disabled={isFull(selectedSlots)}
+          onClick={(e) => onSelectChord(chord, e.detail > 1)}
+          disabled={isSelectionComplete(selectedSlots)}
           className="group relative transform rounded-xl border border-slate-600 bg-slate-700 p-3 font-bold text-lg text-white shadow-lg shadow-slate-900/20 transition-all hover:border-indigo-400 hover:bg-slate-600 active:scale-95 active:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-50 md:p-4"
         >
           <ShortcutBadge
@@ -239,29 +225,22 @@ const ChordButtons: React.FC<{
 
 const SubmitSection: React.FC<{
   selectedSlots: (string | null)[];
-  onSubmit: () => void;
-  onUndo: () => void;
+  onSubmit: (isRepeatClick?: boolean) => void;
+  onUndo: (isRepeatClick?: boolean) => void;
 }> = ({ selectedSlots, onSubmit, onUndo }) => {
   const { t } = useTranslation();
-
-  const isFull = (slots: (string | null)[]): slots is string[] => {
-    return slots.every((s) => s !== null);
-  };
   const canUndo = selectedSlots.some((slot) => slot !== null);
 
   return (
     <div className="relative flex justify-center">
       <Button
-        onClick={(e) => {
-          if (isRepeatClick(e)) return;
-          onSubmit();
-        }}
-        disabled={!isFull(selectedSlots)}
+        onClick={(e) => onSubmit(e.detail > 1)}
+        disabled={!isSelectionComplete(selectedSlots)}
         fullWidth
         className="relative max-w-xs py-4 font-bold text-lg shadow-indigo-500/20 shadow-xl"
       >
         {t('game.submit')}
-        {isFull(selectedSlots) && (
+        {isSelectionComplete(selectedSlots) && (
           <ShortcutBadge
             k="Enter"
             className="-translate-y-1/2 absolute top-1/2 right-4 border-indigo-400 bg-indigo-700 text-indigo-100"
@@ -270,10 +249,7 @@ const SubmitSection: React.FC<{
       </Button>
       <button
         type="button"
-        onClick={(e) => {
-          if (isRepeatClick(e)) return;
-          onUndo();
-        }}
+        onClick={(e) => onUndo(e.detail > 1)}
         disabled={!canUndo}
         title={t('game.undo')}
         className="-right-4 -translate-y-1/2 absolute top-1/2 hidden items-center gap-2 font-mono text-slate-500 text-xs transition-opacity disabled:cursor-not-allowed disabled:opacity-40 lg:flex"
@@ -422,9 +398,8 @@ const InstructionsModal: React.FC<{ show: boolean; onClose: () => void }> = ({ s
 
 const FeedbackView: React.FC<{
   gameState: GameState;
-  loading: boolean;
-  onNext: () => void;
-}> = ({ gameState, loading, onNext }) => {
+  onNext: (isRepeatClick?: boolean) => void;
+}> = ({ gameState, onNext }) => {
   const { t } = useTranslation();
 
   return (
@@ -437,7 +412,7 @@ const FeedbackView: React.FC<{
       </div>
 
       <div className="mb-6 min-h-[100px] rounded-xl border border-slate-700/50 bg-slate-900/50 p-6">
-        {loading ? (
+        {gameState.isLoading ? (
           <div className="flex h-full items-center justify-center gap-3 text-indigo-400">
             <div className="h-2 w-2 animate-bounce rounded-full bg-indigo-400"></div>
             <div className="h-2 w-2 animate-bounce rounded-full bg-indigo-400 [animation-delay:0.1s]"></div>
@@ -452,10 +427,7 @@ const FeedbackView: React.FC<{
       </div>
 
       <Button
-        onClick={(e) => {
-          if (isRepeatClick(e)) return;
-          onNext();
-        }}
+        onClick={(e) => onNext(e.detail > 1)}
         fullWidth
         variant="primary"
         className="relative py-4 font-bold text-lg"
@@ -474,24 +446,15 @@ const FeedbackView: React.FC<{
 
 interface Props {
   gameState: GameState;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  onBack: () => void;
-  onNextRound: () => void;
+  dispatch: React.Dispatch<GameAction>;
+  onBack: (isRepeatClick?: boolean) => void;
 }
 
-// Type Guard
-const isFull = (slots: (string | null)[]): slots is string[] => {
-  return slots.every((s) => s !== null);
-};
-
-export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onNextRound }) => {
+export const GameArea: React.FC<Props> = ({ gameState, dispatch, onBack }) => {
   const { t, locale } = useTranslation();
-  const [selectedSlots, setSelectedSlots] = useState<(string | null)[]>([null, null, null, null]);
-  const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [playingChordIndex, setPlayingChordIndex] = useState<number>(-1);
   const [currentPreset, setCurrentPreset] = useState<SynthPreset>('PIANO');
   const [showHelp, setShowHelp] = useState(false);
-  const submittingRef = useRef(false);
 
   // Sync audio service
   useEffect(() => {
@@ -516,44 +479,47 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
     }
   };
 
-  const handlePlay = useCallback(async (): Promise<void> => {
-    if (!gameState.currentProgression || gameState.isPlaying) return;
+  const handlePlay = useCallback(
+    async (isRepeatClick = false): Promise<void> => {
+      if (isRepeatClick || !gameState.currentProgression || gameState.isPlaying) return;
 
-    setGameState((prev) => ({ ...prev, isPlaying: true }));
-    setPlayingChordIndex(0);
+      dispatch({ type: 'SET_PLAYING', isPlaying: true });
+      setPlayingChordIndex(0);
 
-    const bpm = 100;
-    const beatDurationSec = 60 / bpm;
-    const chordDurationSec = beatDurationSec * 2;
-    const chordDurationMs = chordDurationSec * 1000;
+      const bpm = 100;
+      const beatDurationSec = 60 / bpm;
+      const chordDurationSec = beatDurationSec * 2;
+      const chordDurationMs = chordDurationSec * 1000;
 
-    // Visualizer loop
-    for (let i = 0; i < 4; i++) {
+      // Visualizer loop
+      for (let i = 0; i < 4; i++) {
+        window.setTimeout(() => {
+          setPlayingChordIndex(i);
+        }, i * chordDurationMs);
+      }
+
+      // Cleanup timeout at end
       window.setTimeout(() => {
-        setPlayingChordIndex(i);
-      }, i * chordDurationMs);
-    }
+        setPlayingChordIndex(-1);
+        dispatch({ type: 'SET_PLAYING', isPlaying: false });
+      }, 4 * chordDurationMs);
 
-    // Cleanup timeout at end
-    window.setTimeout(() => {
-      setPlayingChordIndex(-1);
-      setGameState((prev) => ({ ...prev, isPlaying: false }));
-    }, 4 * chordDurationMs);
-
-    // Audio Playback
-    const notes = gameState.currentProgression.chords.map((c) => c.notes);
-    try {
-      await audioService.playProgression(notes, bpm);
-    } catch (e) {
-      console.error('Playback failed', e);
-      setPlayingChordIndex(-1);
-      setGameState((prev) => ({ ...prev, isPlaying: false }));
-    }
-  }, [gameState.currentProgression, gameState.isPlaying, setGameState]);
+      // Audio Playback
+      const notes = gameState.currentProgression.chords.map((c) => c.notes);
+      try {
+        await audioService.playProgression(notes, bpm);
+      } catch (e) {
+        console.error('Playback failed', e);
+        setPlayingChordIndex(-1);
+        dispatch({ type: 'SET_PLAYING', isPlaying: false });
+      }
+    },
+    [gameState.currentProgression, gameState.isPlaying, dispatch]
+  );
 
   const playSingleChord = useCallback(
-    async (chordRoman: string): Promise<void> => {
-      if (!gameState.level) return;
+    async (chordRoman: string, isRepeatClick = false): Promise<void> => {
+      if (isRepeatClick || !gameState.level) return;
       const notes = getChordNotes(
         chordRoman,
         gameState.level.type,
@@ -564,94 +530,77 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
     [gameState.level, gameState.currentProgression]
   );
 
-  const handleSelectChord = useCallback(
-    (chord: string): void => {
-      const firstEmptyIndex = selectedSlots.indexOf(null);
-      if (firstEmptyIndex !== -1) {
-        const newSlots = [...selectedSlots];
-        newSlots[firstEmptyIndex] = chord;
-        setSelectedSlots(newSlots);
-      }
-    },
-    [selectedSlots]
-  );
-
   const handleSlotClick = useCallback(
-    (index: number): void => {
+    (index: number, isRepeatClick = false): void => {
       if (gameState.status === 'FEEDBACK') {
-        const userChord = selectedSlots[index];
-        if (userChord) playSingleChord(userChord);
+        const userChord = gameState.selectedSlots[index];
+        if (userChord) playSingleChord(userChord, isRepeatClick);
         return;
       }
-      const newSlots = [...selectedSlots];
-      newSlots[index] = null;
-      setSelectedSlots(newSlots);
+      dispatch({ type: 'CLEAR_SLOT', index, isRepeatClick });
     },
-    [gameState.status, selectedSlots, playSingleChord]
+    [gameState.status, gameState.selectedSlots, playSingleChord, dispatch]
   );
 
-  const handleClearSlot = useCallback(
-    (index: number): void => {
-      if (gameState.status === 'FEEDBACK') return;
-      const newSlots = [...selectedSlots];
-      newSlots[index] = null;
-      setSelectedSlots(newSlots);
+  const handleUndo = useCallback(
+    (isRepeatClick = false): void => {
+      dispatch({ type: 'UNDO', isRepeatClick });
     },
-    [gameState.status, selectedSlots]
+    [dispatch]
   );
 
-  const handleUndo = useCallback((): void => {
-    if (gameState.status === 'FEEDBACK') return;
-    const lastFilledIndex = selectedSlots.reduce((lastIndex, slot, idx) => {
-      return slot !== null ? idx : lastIndex;
-    }, -1);
+  const handleSubmit = useCallback(
+    async (isRepeatClick = false): Promise<void> => {
+      if (
+        isRepeatClick ||
+        gameState.status !== 'PLAYING' ||
+        !isSelectionComplete(gameState.selectedSlots)
+      ) {
+        return;
+      }
 
-    if (lastFilledIndex !== -1) {
-      handleClearSlot(lastFilledIndex);
-    }
-  }, [gameState.status, selectedSlots, handleClearSlot]);
+      // Type guard ensures selectedSlots is string[] here
+      const userAnswers = gameState.selectedSlots;
+      const correctAnswers = gameState.currentProgression?.chords.map((c) => c.roman) ?? [];
+      const isCorrect = userAnswers.every((ans, i) => ans === correctAnswers[i]);
 
-  const handleSubmit = useCallback(async (): Promise<void> => {
-    if (submittingRef.current || !isFull(selectedSlots)) return;
-    submittingRef.current = true;
+      dispatch({ type: 'SUBMIT', isCorrect });
 
-    // Type guard ensures selectedSlots is string[] here
-    const userAnswers = selectedSlots;
-    const correctAnswers = gameState.currentProgression?.chords.map((c) => c.roman) ?? [];
+      const feedback = isCorrect
+        ? t('feedback.perfect')
+        : await fetchFeedback(
+            correctAnswers,
+            userAnswers,
+            gameState.level?.type ?? LevelType.MAJOR,
+            t,
+            locale
+          );
 
-    const isCorrect = userAnswers.every((ans, i) => ans === correctAnswers[i]);
+      dispatch({ type: 'FEEDBACK_LOADED', content: feedback });
+    },
+    [
+      gameState.status,
+      gameState.selectedSlots,
+      gameState.currentProgression,
+      gameState.level,
+      t,
+      locale,
+      dispatch,
+    ]
+  );
 
-    setFeedbackLoading(true);
-    setGameState((prev) => ({ ...prev, status: 'FEEDBACK' }));
+  const handleNextRound = useCallback(
+    (isRepeatClick = false): void => {
+      if (isRepeatClick || gameState.status !== 'FEEDBACK' || !gameState.level) return;
 
-    let feedback = '';
-    if (isCorrect) {
-      setGameState((prev) => ({ ...prev, score: prev.score + 10 }));
-      feedback = t('feedback.perfect');
-    } else {
-      feedback = await fetchFeedback(
-        correctAnswers,
-        userAnswers,
-        gameState.level?.type ?? LevelType.MAJOR,
-        t,
-        locale
-      );
-    }
-
-    setGameState((prev) => ({
-      ...prev,
-      feedbackContent: feedback,
-      status: 'FEEDBACK',
-    }));
-    setFeedbackLoading(false);
-  }, [selectedSlots, gameState.currentProgression, gameState.level, t, locale, setGameState]);
-
-  const handleInternalNextRound = useCallback((): void => {
-    submittingRef.current = false;
-    setSelectedSlots([null, null, null, null]);
-    setPlayingChordIndex(-1);
-    onNextRound();
-  }, [onNextRound]);
+      setPlayingChordIndex(-1);
+      dispatch({
+        type: 'NEXT_ROUND',
+        progression: generateProgression(gameState.level.id, gameState.level.type),
+      });
+    },
+    [gameState.status, gameState.level, dispatch]
+  );
 
   // Keyboard shortcut handlers
   const handleHelpKeys = useCallback(
@@ -697,14 +646,14 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
 
       if (key === 'enter' || key === 'n') {
         e.preventDefault();
-        handleInternalNextRound();
+        handleNextRound();
         return true;
       }
 
       if (['Digit1', 'Digit2', 'Digit3', 'Digit4'].includes(code)) {
         const idx = parseInt(code.replace('Digit', ''), 10) - 1;
         if (e.shiftKey) {
-          const userChord = selectedSlots[idx];
+          const userChord = gameState.selectedSlots[idx];
           if (userChord) playSingleChord(userChord);
         } else {
           const correctChord = gameState.currentProgression?.chords[idx]?.roman;
@@ -723,8 +672,8 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
     [
       gameState.status,
       gameState.currentProgression,
-      selectedSlots,
-      handleInternalNextRound,
+      gameState.selectedSlots,
+      handleNextRound,
       handlePlay,
       playSingleChord,
     ]
@@ -742,9 +691,7 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
 
       if (key === 'enter') {
         e.preventDefault();
-        if (isFull(selectedSlots)) {
-          handleSubmit();
-        }
+        handleSubmit();
         return true;
       }
 
@@ -755,33 +702,31 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
       }
 
       if (['Digit1', 'Digit2', 'Digit3', 'Digit4'].includes(code)) {
-        handleClearSlot(parseInt(code.replace('Digit', ''), 10) - 1);
+        dispatch({
+          type: 'CLEAR_SLOT',
+          index: parseInt(code.replace('Digit', ''), 10) - 1,
+        });
         return true;
       }
 
       const chordIndex = CHORD_SHORTCUTS.indexOf(key);
       if (chordIndex !== -1 && gameState.level?.availableChords[chordIndex]) {
-        const chord = gameState.level.availableChords[chordIndex];
-        handleSelectChord(chord);
+        dispatch({
+          type: 'SELECT_CHORD',
+          chord: gameState.level.availableChords[chordIndex] as string,
+        });
         return true;
       }
 
       return false;
     },
-    [
-      selectedSlots,
-      gameState.level,
-      handlePlay,
-      handleSubmit,
-      handleClearSlot,
-      handleSelectChord,
-      handleUndo,
-    ]
+    [gameState.level, handlePlay, handleSubmit, handleUndo, dispatch]
   );
 
   // Keyboard Shortcuts Logic
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       if (handleHelpKeys(e)) return;
@@ -808,7 +753,7 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
       <PlaybackControl gameState={gameState} onPlay={handlePlay} />
 
       <div className="mb-10 grid w-full max-w-3xl grid-cols-4 gap-3 px-2 md:gap-6">
-        {selectedSlots.map((slot, idx) => (
+        {gameState.selectedSlots.map((slot, idx) => (
           <Slot
             key={idx}
             slot={slot}
@@ -816,9 +761,9 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
             playingChordIndex={playingChordIndex}
             gameState={gameState}
             onSlotClick={handleSlotClick}
-            onPlayCorrect={(index) => {
+            onPlayCorrect={(index, isRepeatClick) => {
               const correct = gameState.currentProgression?.chords[index]?.roman;
-              if (correct) playSingleChord(correct);
+              if (correct) playSingleChord(correct, isRepeatClick);
             }}
           />
         ))}
@@ -828,22 +773,20 @@ export const GameArea: React.FC<Props> = ({ gameState, setGameState, onBack, onN
         <div className="w-full max-w-3xl animate-fade-in">
           <ChordButtons
             availableChords={[...(gameState.level?.availableChords || [])]}
-            selectedSlots={selectedSlots}
-            onSelectChord={handleSelectChord}
+            selectedSlots={gameState.selectedSlots}
+            onSelectChord={(chord, isRepeatClick) =>
+              dispatch({ type: 'SELECT_CHORD', chord, isRepeatClick })
+            }
           />
 
           <SubmitSection
-            selectedSlots={selectedSlots}
+            selectedSlots={gameState.selectedSlots}
             onSubmit={handleSubmit}
             onUndo={handleUndo}
           />
         </div>
       ) : (
-        <FeedbackView
-          gameState={gameState}
-          loading={feedbackLoading}
-          onNext={handleInternalNextRound}
-        />
+        <FeedbackView gameState={gameState} onNext={handleNextRound} />
       )}
 
       <InstructionsModal show={showHelp} onClose={() => setShowHelp(false)} />

@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { match } from 'ts-pattern';
 import { GameArea } from './components/GameArea';
 import { LevelSelector } from './components/LevelSelector';
@@ -9,8 +9,9 @@ import { TheoryModal } from './components/TheoryModal';
 import { useTranslation } from './i18n/I18nContext';
 import type { Language } from './i18n/types';
 import { fetchTheoryLesson } from './services/contentService';
+import { gameReducer, initialGameState } from './services/gameReducer';
 import { generateProgression } from './services/theoryService';
-import type { GameState, LevelConfig, RealSong } from './types';
+import type { LevelConfig, RealSong } from './types';
 
 // Type Guard
 const isLanguage = (lang: string): lang is Language => {
@@ -19,7 +20,7 @@ const isLanguage = (lang: string): lang is Language => {
     .otherwise(() => false);
 };
 
-const Header: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const Header: React.FC<{ onBack: (isRepeatClick?: boolean) => void }> = ({ onBack }) => {
   const { t, language, setLanguage } = useTranslation();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -42,7 +43,7 @@ const Header: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <button
           type="button"
           className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80 focus:outline-none"
-          onClick={onBack}
+          onClick={(e) => onBack(e.detail > 1)}
           aria-label={t('common.back')}
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 shadow-indigo-500/20 shadow-lg">
@@ -136,34 +137,16 @@ const Header: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 function App() {
   const { t } = useTranslation();
-  const [gameState, setGameState] = useState<GameState>({
-    level: null,
-    activeRealSong: null,
-    isPlaying: false,
-    currentProgression: null,
-    userAnswers: [],
-    status: 'IDLE',
-    theoryContent: '',
-    feedbackContent: '',
-    score: 0,
-    round: 1,
-    isLoading: false,
-  });
+  const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
 
   // Fetch theory content whenever level or language changes
   useEffect(() => {
     let isMounted = true;
 
     if (gameState.status === 'THEORY' && gameState.level) {
-      setGameState((prev) => ({ ...prev, isLoading: true }));
-
       fetchTheoryLesson(gameState.level.id, t).then((content) => {
         if (isMounted) {
-          setGameState((prev) => ({
-            ...prev,
-            theoryContent: content,
-            isLoading: false,
-          }));
+          dispatch({ type: 'THEORY_LOADED', content });
         }
       });
     }
@@ -173,60 +156,26 @@ function App() {
     };
   }, [gameState.status, gameState.level, t]);
 
-  const handleSelectLevel = (level: LevelConfig) => {
-    setGameState((prev) => ({
-      ...prev,
-      level,
-      status: 'THEORY',
-      isLoading: true,
-    }));
+  const handleSelectLevel = (level: LevelConfig, isRepeatClick = false) => {
+    dispatch({ type: 'SELECT_LEVEL', level, isRepeatClick });
   };
 
-  const handleSelectRealSong = (song: RealSong) => {
-    setGameState((prev) => ({
-      ...prev,
-      activeRealSong: song,
-      status: 'REAL_SONG',
-    }));
+  const handleSelectRealSong = (song: RealSong, isRepeatClick = false) => {
+    dispatch({ type: 'SELECT_REAL_SONG', song, isRepeatClick });
   };
 
-  const generateNewRound = (level: LevelConfig) => {
-    const newProgression = generateProgression(level.id, level.type);
+  const startGame = (isRepeatClick = false) => {
+    if (isRepeatClick || !gameState.level) return;
 
-    setGameState((prev) => ({
-      ...prev,
-      status: 'PLAYING',
-      currentProgression: newProgression,
-      userAnswers: [],
-      feedbackContent: '',
-    }));
-  };
-
-  const startGame = () => {
-    if (!gameState.level) return;
-    generateNewRound(gameState.level);
-  };
-
-  const handleNextRound = () => {
-    if (!gameState.level) return;
-    setGameState((prev) => ({ ...prev, round: prev.round + 1 }));
-    generateNewRound(gameState.level);
-  };
-
-  const handleBack = () => {
-    setGameState({
-      level: null,
-      activeRealSong: null,
-      isPlaying: false,
-      currentProgression: null,
-      userAnswers: [],
-      status: 'IDLE',
-      theoryContent: '',
-      feedbackContent: '',
-      score: 0,
-      round: 1,
-      isLoading: false,
+    dispatch({
+      type: 'START_GAME',
+      progression: generateProgression(gameState.level.id, gameState.level.type),
+      isRepeatClick,
     });
+  };
+
+  const handleBack = (isRepeatClick = false) => {
+    dispatch({ type: 'RESET', isRepeatClick });
   };
 
   return (
@@ -254,20 +203,14 @@ function App() {
         {gameState.status === 'REAL_SONG' && gameState.activeRealSong && (
           <RealSongGameArea
             song={gameState.activeRealSong}
+            gameState={gameState}
+            dispatch={dispatch}
             onBack={handleBack}
-            setGameState={setGameState}
           />
         )}
 
-        {(gameState.status === 'PLAYING' ||
-          gameState.status === 'FEEDBACK' ||
-          gameState.status === 'GUESSING') && (
-          <GameArea
-            gameState={gameState}
-            setGameState={setGameState}
-            onBack={handleBack}
-            onNextRound={handleNextRound}
-          />
+        {(gameState.status === 'PLAYING' || gameState.status === 'FEEDBACK') && (
+          <GameArea gameState={gameState} dispatch={dispatch} onBack={handleBack} />
         )}
       </main>
     </div>

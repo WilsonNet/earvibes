@@ -5,8 +5,8 @@ import { Button } from './Button';
 
 interface Props {
   content: string;
-  onStart: () => void;
-  onBack?: () => void;
+  onStart: (isRepeatClick?: boolean) => void;
+  onBack?: (isRepeatClick?: boolean) => void;
   isLoading: boolean;
 }
 
@@ -21,7 +21,7 @@ export const TheoryModal: React.FC<Props> = ({ content, onStart, onBack, isLoadi
           {onBack && (
             <button
               type="button"
-              onClick={onBack}
+              onClick={(e) => onBack(e.detail > 1)}
               className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
               aria-label={t('common.back')}
             >
@@ -59,11 +59,15 @@ export const TheoryModal: React.FC<Props> = ({ content, onStart, onBack, isLoadi
 
         <div className="flex justify-end gap-3 rounded-b-2xl border-slate-700 border-t bg-slate-800/50 p-6">
           {onBack && (
-            <Button onClick={onBack} variant="ghost">
+            <Button onClick={(e) => onBack(e.detail > 1)} variant="ghost">
               {t('common.back')}
             </Button>
           )}
-          <Button onClick={onStart} disabled={isLoading} className="min-w-[150px]">
+          <Button
+            onClick={(e) => onStart(e.detail > 1)}
+            disabled={isLoading}
+            className="min-w-[150px]"
+          >
             {isLoading ? t('theory.generating') : t('theory.startQuiz')}
           </Button>
         </div>

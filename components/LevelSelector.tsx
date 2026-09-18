@@ -5,8 +5,8 @@ import type { LevelConfig, RealSong } from '../types';
 import { Button } from './Button';
 
 interface Props {
-  onSelectLevel: (level: LevelConfig) => void;
-  onSelectRealSong: (song: RealSong) => void;
+  onSelectLevel: (level: LevelConfig, isRepeatClick?: boolean) => void;
+  onSelectRealSong: (song: RealSong, isRepeatClick?: boolean) => void;
 }
 
 export const LevelSelector: React.FC<Props> = ({ onSelectLevel, onSelectRealSong }) => {
@@ -38,7 +38,11 @@ export const LevelSelector: React.FC<Props> = ({ onSelectLevel, onSelectRealSong
                   {t(titleKey)}
                 </h3>
                 <p className="mb-6 flex-grow text-slate-400 text-sm">{t(descKey)}</p>
-                <Button onClick={() => onSelectLevel(level)} fullWidth className="mt-auto">
+                <Button
+                  onClick={(e) => onSelectLevel(level, e.detail > 1)}
+                  fullWidth
+                  className="mt-auto"
+                >
                   {t('home.startTraining')}
                 </Button>
               </div>
@@ -87,7 +91,7 @@ export const LevelSelector: React.FC<Props> = ({ onSelectLevel, onSelectRealSong
                 </div>
                 <p className="mb-4 font-medium text-indigo-400 text-sm">{song.artist}</p>
                 <Button
-                  onClick={() => onSelectRealSong(song)}
+                  onClick={(e) => onSelectRealSong(song, e.detail > 1)}
                   variant="secondary"
                   className="mt-auto border-none hover:bg-red-600 hover:text-white"
                 >

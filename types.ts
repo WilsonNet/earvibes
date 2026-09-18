@@ -47,16 +47,20 @@ export interface RealSong {
   progression: string[]; // e.g. ["I", "V", "vi", "IV"]
 }
 
+export type GameStatus = 'IDLE' | 'PLAYING' | 'FEEDBACK' | 'THEORY' | 'REAL_SONG';
+
 export interface GameState {
   level: LevelConfig | null;
   activeRealSong: RealSong | null; // New field for Real Song mode
   isPlaying: boolean;
   currentProgression: Progression | null;
-  userAnswers: string[];
-  status: 'IDLE' | 'PLAYING' | 'GUESSING' | 'FEEDBACK' | 'THEORY' | 'REAL_SONG';
+  selectedSlots: (string | null)[];
+  status: GameStatus;
   theoryContent: string;
   feedbackContent: string;
   score: number;
   round: number;
   isLoading: boolean;
+  isAnswerRevealed: boolean;
+  isAnswerCorrect: boolean;
 }
